@@ -1,0 +1,6 @@
+bootJar.enabled = true // 실행 가능한 JAR 생성
+jar.enabled = false // JAR은 필요 없으므로 false
+
+dependencies {
+    implementation project(":common")
+}

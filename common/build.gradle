@@ -1,0 +1,6 @@
+bootJar.enabled = false // 실행 가능한 JAR 생성 안함
+jar.enabled = true // JAR만 생성
+
+dependencies {
+    implementation("org.apache.commons:commons-lang3")
+}
