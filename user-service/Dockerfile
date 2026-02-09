@@ -1,4 +1,5 @@
-FROM openjdk:17-jdk-slim
+# FROM openjdk:17-jdk-slim
+FROM amazoncorretto:17-slim
 
 WORKDIR /app
 
@@ -10,5 +11,5 @@ ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:+UseG1GC"
 ENV SPRING_PROFILES_ACTIVE=local
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS \
- -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
- -jar app.jar"]
+    -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
+    -jar app.jar"]
