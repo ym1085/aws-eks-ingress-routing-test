@@ -14,8 +14,7 @@ public class OrderRestController {
 
     @GetMapping(value = "/orders", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getOrders() {
-        log.info("enter get orders");
-        log.info("test github action");
+        log.info("enter get order");
         return ResponseEntity.ok().body("orders");
     }
 }
