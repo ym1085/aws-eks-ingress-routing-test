@@ -7,7 +7,8 @@ on:
     branches:
       - dev
       - stg
-      - main
+    tags:
+      - "v*.*.*" # Git Tag 추가(Production)
 
 # Jobs(잡)
 jobs:
@@ -42,27 +43,14 @@ jobs:
 
   # Step 2 : 변경된 서비스만 병렬 빌드 및 업데이트
   build-jar:
-    # detect-changes에 의존성 설정
     needs: detect-changes
-    # 변경된 서비스가 있을 때만 실행
-    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    if: ${{ needs.detect-changes.outputs.services != '[]' }} # 변경된 서비스가 있을 때만 실행
     strategy:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # 환경(TARGET_ENV) 결정
-      - name: Set Environment
-        run: |
-          if [[ $GITHUB_REF == refs/heads/main ]]; then 
-            echo "TARGET_ENV=prod" >> $GITHUB_ENV
-          elif [[ $GITHUB_REF == refs/heads/stg ]]; then 
-            echo "TARGET_ENV=stg" >> $GITHUB_ENV
-          else 
-            echo "TARGET_ENV=dev" >> $GITHUB_ENV; 
-          fi
 
       # JDK 설정 및 빌드 (해당 모듈만)
       - name: Set up JDK 17
@@ -83,7 +71,7 @@ jobs:
           name: ${{ matrix.service }}-jar
           path: ${{ matrix.service }}-service/build/libs/*.jar
           retention-days: 1 # 보안 및 저장 용량 관리를 위해 짧게 설정
-
+  # Step 3 : 환경(Profile)별 Docker image 업로드
   push-image:
     needs: [build-jar, detect-changes]
     strategy:
@@ -109,6 +97,27 @@ jobs:
       - name: Build and Push Image
         run: |
           IMAGE_NAME="youngmin1085/${{ matrix.service }}-service"
-          # 서비스별 Dockerfile 참조
-          docker build -t $IMAGE_NAME:${{ github.sha }} ./${{ matrix.service }}-service
-          docker push $IMAGE_NAME:${{ github.sha }}
+          
+          # Git Tag로 푸시된 경우 (Production 릴리즈)
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v} # v1.2.3 -> 1.2.3
+            echo "Production Release: $VERSION"
+            docker build -t $IMAGE_NAME:$VERSION \
+                   -t $IMAGE_NAME:latest \
+                   ./${{ matrix.service }}-service
+            docker push $IMAGE_NAME:$VERSION
+            docker push $IMAGE_NAME:latest
+          else
+            if [[ $GITHUB_REF == refs/heads/stg ]]; then
+              ENV_TAG="stg"
+            else
+              ENV_TAG="dev"
+            fi
+            echo "Environment: $ENV_TAG"
+            
+            docker build -t $IMAGE_NAME:${{ github.sha }} \
+                         -t $IMAGE_NAME:$ENV_TAG \
+                         ./${{ matrix.service }}-service
+            docker push $IMAGE_NAME:${{ github.sha }}
+            docker push $IMAGE_NAME:$ENV_TAG
+          fi
