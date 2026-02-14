@@ -109,7 +109,7 @@ jobs:
         id: meta
         run: |
           IMAGE_NAME="youngmin1085/${{ matrix.service }}-service"
-          TAGS=""
+          SHORT_SHA=${GITHUB_SHA::7}
           
           # Git Tag로 푸시된 경우 (Production 릴리즈)
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
@@ -122,7 +122,7 @@ jobs:
               ENV_TAG="dev"
             fi
             # 태그: commit-hash, dev(or stg)
-            TAGS="$IMAGE_NAME:${{ github.sha }},$IMAGE_NAME:$ENV_TAG"
+            TAGS="$IMAGE_NAME:${ENV_TAG}-${SHORT_SHA}"
           fi
           echo "Generated Tags: $TAGS"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
